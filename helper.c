@@ -8,6 +8,14 @@
 
 #include "helper.h"
 
+int fileExists(char *file){
+  if(access(file,F_OK)!=-1){
+    return 1;
+  }else{
+    return 0;
+  }
+}
+
 int set_addr(struct sockaddr_in *addr, char *name, u_int32_t inaddr, short sin_port) {
 	struct hostent *h;
 	memset((void *)addr, 0, sizeof(*addr));
