@@ -57,17 +57,18 @@ int readFileMetadata(int connfd,char *file){
 void readFileAndWriteToDisk(int connfd,char *path, int fsize){
   char *buf = malloc(PL);
   int r=0;
+  int orig = fsize;
   FILE *f=fopen(path, "wb");
   if(!f)
     printf("Couldn't open %s\n", path);
   else
     {
-      printf("fisze:%d",fsize);
+      printf("fisze:%d\n",fsize);
       while(fsize>0 && ((r=stream_read(connfd,(void*)buf,PL>fsize ? fsize : PL)))!=-1){
 	fwrite(buf, sizeof(char), r, f);
 	fsize-=r;
       }
-      printf("File %s received with size %d\n",path,fsize);
+      printf("File %s received with size %d\n",path,orig);
       fclose(f);
     }
   free(buf);
@@ -115,7 +116,7 @@ int readFileFromDiskAndSend(char *path,int fsize, int sockfd){
     return -1;
   int x;
   while(((x = fread(buff, sizeof(char),PL>fsize ? fsize : PL, f))>=0)&&fsize>0){
-    stream_write(sockfd,buff,fsize);
+    stream_write(sockfd,buff,x);
     fsize-=x;
   }
   free(buff);
@@ -160,21 +161,21 @@ void *upload(void *arg){
     rlen = sizeof(rmt_addr);
     connfd = accept(sockfd, (struct sockaddr *)&rmt_addr, &rlen);
     stream_read(connfd,(void *)buf,1);
-      int fnameLength = *buf;
-      if(stream_read(connfd,(void *)buf,fnameLength)!=fnameLength){
-	printf("Couldn't read entrire file name");
-      }
-      buf[fnameLength]='\0';
-      snprintf(filePath,510,"%s%s",dir_path,buf);
-      printf("Requested file:%s\n",filePath);
-      if(fileExists(filePath)){
-	char address[20];
-	strncpy(address,inet_ntoa(rmt_addr.sin_addr),19);
-	printf("Preparing to send file to:%s\n",address);
-	send_file(buf,address);
-      }
-      close(connfd);
-      close(sockfd);
+    int fnameLength = *buf;
+    if(stream_read(connfd,(void *)buf,fnameLength)!=fnameLength){
+      printf("Couldn't read entrire file name");
+    }
+    buf[fnameLength]='\0';
+    snprintf(filePath,510,"%s%s",dir_path,buf);
+    printf("Requested file:%s\n",filePath);
+    if(fileExists(filePath)){
+      char address[20];
+      strncpy(address,inet_ntoa(rmt_addr.sin_addr),19);
+      printf("Preparing to send file to:%s\n",address);
+      send_file(buf,address);
+    }
+    close(connfd);
+    close(sockfd);
   }
   
   return NULL;
